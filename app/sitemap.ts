@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
+import { MetadataRoute } from 'next';
 import { supabase } from '@/lib/supabase';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://floqer-company-directory.netlify.app';
 const COMPANIES_PER_SITEMAP = 50000;
 
-export async function GET() {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Base sitemap entries
   const baseEntries = [
     {
@@ -28,69 +28,31 @@ export async function GET() {
       .select('*', { count: 'exact', head: true });
 
     const total = totalCompanies || 0;
-    const totalPages = Math.ceil(total / COMPANIES_PER_SITEMAP);
-
-    // Create sitemap index entries
-    const sitemapIndexEntries = [];
     
-    for (let i = 1; i <= totalPages; i++) {
-      sitemapIndexEntries.push({
-        url: `${SITE_URL}/sitemap/${i}.xml`,
-        lastModified: new Date(),
-      });
-    }
+    // Add company URLs (limit to first 1000 for performance)
+    const { data: companies } = await supabase
+      .from('companies')
+      .select('W2, "Last Updated"')
+      .limit(1000)
+      .order('W2', { ascending: true });
 
-    // Generate sitemap index XML
-    const sitemapEntries = [
-      ...baseEntries.map(entry => `
-    <url>
-      <loc>${entry.url}</loc>
-      <lastmod>${entry.lastModified.toISOString()}</lastmod>
-      <changefreq>${entry.changeFrequency}</changefreq>
-      <priority>${entry.priority}</priority>
-    </url>`),
-      ...sitemapIndexEntries.map(entry => `
-    <sitemap>
-      <loc>${entry.url}</loc>
-      <lastmod>${entry.lastModified.toISOString()}</lastmod>
-    </sitemap>`),
-    ].join('');
-
-    const sitemap = total > COMPANIES_PER_SITEMAP 
-      ? `<?xml version="1.0" encoding="UTF-8"?>
-<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${sitemapEntries}
-</sitemapindex>`
-      : `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${sitemapEntries}
-</urlset>`;
-
-    return new Response(sitemap, {
-      headers: {
-        'Content-Type': 'application/xml',
-        'Cache-Control': 'public, max-age=3600',
-      },
+    const companyEntries = (companies || []).map((row) => {
+      const nameSlug = encodeURIComponent((row.W2 || '').toLowerCase().replace(/\s+/g, '-'));
+      const slug = nameSlug;
+      const lastMod = row['Last Updated'] ? new Date(row['Last Updated']) : new Date();
+      
+      return {
+        url: `${SITE_URL}/company/${slug}`,
+        lastModified: lastMod,
+        changeFrequency: 'weekly' as const,
+        priority: 0.7,
+      };
     });
+
+    return [...baseEntries, ...companyEntries];
 
   } catch (e) {
     // Fallback to basic sitemap if there's an error
-    const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${baseEntries.map(entry => `
-    <url>
-      <loc>${entry.url}</loc>
-      <lastmod>${entry.lastModified.toISOString()}</lastmod>
-      <changefreq>${entry.changeFrequency}</changefreq>
-      <priority>${entry.priority}</priority>
-    </url>`).join('')}
-</urlset>`;
-
-    return new Response(sitemap, {
-      headers: {
-        'Content-Type': 'application/xml',
-        'Cache-Control': 'public, max-age=3600',
-      },
-    });
+    return baseEntries;
   }
 }
