@@ -8,6 +8,7 @@ import { listCompanies } from '@/lib/data/companies';
 import { Company } from '@/lib/types';
 import CompanyCard from './CompanyCard';
 import LayoutWrapper from './LayoutWrapper';
+import { createSafeSlug } from '@/lib/slugUtils';
 
 const STAGES = ['All Stages', 'Seed', 'Series A', 'Series B', 'Series C', 'Series D', 'Series E', 'Series F', 'Corporate', 'IPO', 'Private Equity'];
 const TYPES = ['All Types', 'Public', 'Private'];
@@ -165,7 +166,7 @@ export default function DirectoryPage() {
         {/* Hero */}
         <div className="pt-14">
         <div className="relative px-16 hero-grid">
-          <div className="max-w-7xl mx-auto relative py-16">
+          <div className="max-w-7xl mx-auto relative py-36">
             <div className="flex flex-col gap-4 text-left max-w-4xl">
               <h1 className="text-6xl sm:text-5xl lg:text-6xl font-normal text-gray-900 leading-none tracking-tight font-display">
                 Explore insights on people, companies &<span className="text-[#ff4f12]"> businesses</span>
@@ -189,7 +190,7 @@ export default function DirectoryPage() {
                 {showSuggestions && searchSuggestions.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-30 max-h-64 overflow-y-auto">
                     {searchSuggestions.map((company) => {
-                      const slug = company.id || encodeURIComponent(company.W2.toLowerCase().replace(/\s+/g, '-'));
+                      const slug = createSafeSlug(company.W2);
                       return (
                         <Link
                           key={company.W2}

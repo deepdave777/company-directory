@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { MapPin, Users } from '@phosphor-icons/react';
 import { Company } from '@/lib/types';
 import { formatFundingStage } from '@/lib/utils';
+import { createSafeSlug } from '@/lib/slugUtils';
 
 interface CompanyCardProps {
   company: Company;
@@ -21,8 +22,8 @@ export default function CompanyCard({ company }: CompanyCardProps) {
   const revenue = company['Revenue Range'] || '';
   const logo = company['Company Logo URL'];
 
-  // Use UUID id as slug (fallback to name-based slug only if id missing)
-  const slug = company.id || encodeURIComponent(name.toLowerCase().replace(/\s+/g, '-'));
+  // Use SEO-friendly name-based slug
+  const slug = createSafeSlug(name);
 
   return (
     <Link href={`/company/${slug}`}>

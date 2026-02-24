@@ -16,7 +16,7 @@ export default async function sitemap() {
 
     const companyEntries = data.map((row) => {
       const nameSlug = encodeURIComponent((row.W2 || '').toLowerCase().replace(/\s+/g, '-'));
-      const slug = row.id || nameSlug;
+      const slug = nameSlug; // Use name-based slug for SEO
       const lastMod = row['Last Updated'] ? new Date(row['Last Updated']) : new Date();
       return {
         url: `${SITE_URL}/company/${slug}`,

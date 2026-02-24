@@ -5,25 +5,25 @@ import { Company } from '@/lib/types';
 const BACKEND = process.env.NEXT_PUBLIC_DATA_BACKEND || 'supabase';
 
 async function getCompanyBySlugSupabase(slug: string): Promise<Company | null> {
-  // Primary lookup by UUID id
-  const { data, error } = await supabase
-    .from('companies')
-    .select('*')
-    .eq('id', slug)
-    .limit(1)
-    .single();
-
-  if (data) return data as Company;
-
-  // Fallback for legacy name-based slugs
+  // Primary lookup by name-based slug (SEO-friendly URLs)
   const name = decodeURIComponent(slug).replace(/-/g, ' ');
-  const { data: legacy } = await supabase
+  const { data, error } = await supabase
     .from('companies')
     .select('*')
     .ilike('W2', name)
     .limit(1)
     .single();
-  return legacy as Company | null;
+
+  if (data) return data as Company;
+
+  // Fallback for partial matches or edge cases
+  const { data: fallback } = await supabase
+    .from('companies')
+    .select('*')
+    .ilike('W2', `%${name}%`)
+    .limit(1)
+    .single();
+  return fallback as Company | null;
 }
 
 async function listCompaniesSupabase(): Promise<Company[]> {
