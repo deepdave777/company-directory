@@ -1,4 +1,5 @@
 export interface Company {
+  id: string;
   W2: string;
   'Company Logo URL': string | null;
   Website: string | null;

@@ -21,8 +21,8 @@ export default function CompanyCard({ company }: CompanyCardProps) {
   const revenue = company['Revenue Range'] || '';
   const logo = company['Company Logo URL'];
 
-  // Build slug from company name
-  const slug = encodeURIComponent(name.toLowerCase().replace(/\s+/g, '-'));
+  // Use UUID id as slug (fallback to name-based slug only if id missing)
+  const slug = company.id || encodeURIComponent(name.toLowerCase().replace(/\s+/g, '-'));
 
   return (
     <Link href={`/company/${slug}`}>

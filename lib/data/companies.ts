@@ -5,30 +5,31 @@ import { Company } from '@/lib/types';
 const BACKEND = process.env.NEXT_PUBLIC_DATA_BACKEND || 'supabase';
 
 async function getCompanyBySlugSupabase(slug: string): Promise<Company | null> {
-  const name = decodeURIComponent(slug).replace(/-/g, ' ');
+  // Primary lookup by UUID id
   const { data, error } = await supabase
+    .from('companies')
+    .select('*')
+    .eq('id', slug)
+    .limit(1)
+    .single();
+
+  if (data) return data as Company;
+
+  // Fallback for legacy name-based slugs
+  const name = decodeURIComponent(slug).replace(/-/g, ' ');
+  const { data: legacy } = await supabase
     .from('companies')
     .select('*')
     .ilike('W2', name)
     .limit(1)
     .single();
-
-  if (error || !data) {
-    const { data: data2 } = await supabase
-      .from('companies')
-      .select('*')
-      .ilike('W2', `%${name}%`)
-      .limit(1)
-      .single();
-    return data2 as Company | null;
-  }
-  return data as Company;
+  return legacy as Company | null;
 }
 
 async function listCompaniesSupabase(): Promise<Company[]> {
   const { data, error } = await supabase
     .from('companies')
-    .select('W2, "Company Logo URL", "Company Industry", HQ, "Employee Range", Stage, "Current Funding Stage", "Public or Private Company Type", "Revenue Range"')
+    .select('id, W2, "Company Logo URL", "Company Industry", HQ, "Employee Range", Stage, "Current Funding Stage", "Public or Private Company Type", "Revenue Range"')
     .order('W2', { ascending: true });
   if (error || !data) return [];
   return data as Company[];
