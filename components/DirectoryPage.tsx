@@ -69,11 +69,13 @@ function FilterDropdown({ value, options, onChange }: FilterDropdownProps) {
 
 export default function DirectoryPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [filtered, setFiltered] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
   const [searchSuggestions, setSearchSuggestions] = useState<Company[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [stage, setStage] = useState('All Stages');
@@ -82,6 +84,60 @@ export default function DirectoryPage() {
   const [revenue, setRevenue] = useState('All Revenue');
   const [sortAZ, setSortAZ] = useState<'asc' | 'desc'>('asc');
   const searchRef = useRef<HTMLDivElement>(null);
+
+  // Fetch companies from server-side API
+  const fetchCompanies = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: '24',
+        search,
+        stage,
+        type,
+        size,
+        revenue,
+        sort: sortAZ
+      });
+
+      const response = await fetch(`/api/companies?${params}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch companies');
+      }
+      
+      const result = await response.json();
+      
+      setCompanies(result.data || []);
+      setTotalPages(result.pagination.totalPages);
+      setTotalItems(result.pagination.totalItems);
+      setMounted(true);
+    } catch (err) {
+      setError('Failed to load companies');
+      console.error('Fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, search, stage, type, size, revenue, sortAZ]);
+
+  // Debounced search
+  const [searchInput, setSearchInput] = useState(search);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInput !== search) {
+        setSearch(searchInput);
+        setPage(1);
+      }
+    }, 300); // 300ms debounce
+    
+    return () => clearTimeout(timer);
+  }, [searchInput, search]);
+
+  useEffect(() => {
+    fetchCompanies();
+  }, [fetchCompanies]);
 
   // Handle click outside for search suggestions
   useEffect(() => {
@@ -94,71 +150,9 @@ export default function DirectoryPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Update search suggestions when typing
   useEffect(() => {
-    if (search.length > 0) {
-      const suggestions = companies.filter(company =>
-        company.W2?.toLowerCase().includes(search.toLowerCase())
-      ).slice(0, 5); // Limit to 5 suggestions
-      setSearchSuggestions(suggestions);
-      setShowSuggestions(suggestions.length > 0);
-    } else {
-      setSearchSuggestions([]);
-      setShowSuggestions(false);
-    }
-  }, [search, companies]);
-
-  useEffect(() => {
-    async function fetchCompanies() {
-      setLoading(true);
-      const data = await listCompanies();
-      if (!data || data.length === 0) {
-        setError('No companies found');
-      } else {
-        setCompanies(data);
-      }
-      setLoading(false);
-      setMounted(true);
-    }
     fetchCompanies();
-  }, []);
-
-  const applyFilters = useCallback(() => {
-    let result = [...companies];
-
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter(c => (c.W2 || '').toLowerCase().includes(q));
-    }
-
-    if (stage !== 'All Stages') {
-      result = result.filter(c => c.Stage === stage);
-    }
-
-    if (type !== 'All Types') {
-      result = result.filter(c => (c['Public or Private Company Type'] || '').toLowerCase() === type.toLowerCase());
-    }
-
-    if (size !== 'All Sizes') {
-      result = result.filter(c => c['Employee Range'] === size);
-    }
-
-    if (revenue !== 'All Revenue') {
-      result = result.filter(c => c['Revenue Range'] === revenue);
-    }
-
-    result.sort((a, b) => {
-      const nameA = (a.W2 || '').toLowerCase();
-      const nameB = (b.W2 || '').toLowerCase();
-      return sortAZ === 'asc' ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
-    });
-
-    setFiltered(result);
-  }, [companies, search, stage, type, size, revenue, sortAZ]);
-
-  useEffect(() => {
-    applyFilters();
-  }, [applyFilters]);
+  }, [fetchCompanies]);
 
   return (
     <LayoutWrapper>
@@ -180,8 +174,8 @@ export default function DirectoryPage() {
                 <input
                   type="text"
                   placeholder="Search companies..."
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
+                  value={searchInput}
+                  onChange={e => setSearchInput(e.target.value)}
                   onFocus={() => setShowSuggestions(searchSuggestions.length > 0)}
                   className="w-full pl-11 pr-4 py-3.5 text-sm border border-gray-200 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-[#ff4f12]/20 focus:border-[#ff4f12] transition-all"
                 />
@@ -196,6 +190,7 @@ export default function DirectoryPage() {
                           key={company.W2}
                           href={`/company/${slug}`}
                           onClick={() => {
+                            setSearchInput(company.W2);
                             setSearch(company.W2);
                             setShowSuggestions(false);
                           }}
@@ -255,10 +250,10 @@ export default function DirectoryPage() {
                 <Faders className="w-4 h-4" />
                 <span className="font-medium">Filters</span>
               </div>
-              <FilterDropdown value={stage} options={STAGES} onChange={setStage} />
-              <FilterDropdown value={type} options={TYPES} onChange={setType} />
-              <FilterDropdown value={size} options={SIZES} onChange={setSize} />
-              <FilterDropdown value={revenue} options={REVENUES} onChange={setRevenue} />
+              <FilterDropdown value={stage} options={STAGES} onChange={(value) => { setStage(value); setPage(1); }} />
+              <FilterDropdown value={type} options={TYPES} onChange={(value) => { setType(value); setPage(1); }} />
+              <FilterDropdown value={size} options={SIZES} onChange={(value) => { setSize(value); setPage(1); }} />
+              <FilterDropdown value={revenue} options={REVENUES} onChange={(value) => { setRevenue(value); setPage(1); }} />
             </div>
             <button
               onClick={() => setSortAZ(s => s === 'asc' ? 'desc' : 'asc')}
@@ -288,28 +283,87 @@ export default function DirectoryPage() {
             </div>
           ) : (
             <div className={mounted ? 'fade-in' : 'opacity-0'}>
-            <>
-              <p className="text-sm text-gray-500 mb-5">
-                {filtered.length} {filtered.length === 1 ? 'company' : 'companies'} found
-              </p>
-              {filtered.length === 0 ? (
+              <div className="flex items-center justify-between mb-5">
+                <p className="text-sm text-gray-500">
+                  {totalItems} {totalItems === 1 ? 'company' : 'companies'} found
+                </p>
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <span>Page {page} of {totalPages}</span>
+                </div>
+              </div>
+              {companies.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-24 gap-3">
                   <p className="text-gray-500 font-medium">No companies match your filters</p>
                   <button
-                    onClick={() => { setSearch(''); setStage('All Stages'); setType('All Types'); setSize('All Sizes'); setRevenue('All Revenue'); }}
+                    onClick={() => {
+                      setSearch('');
+                      setStage('All Stages');
+                      setType('All Types');
+                      setSize('All Sizes');
+                      setRevenue('All Revenue');
+                      setPage(1);
+                    }}
                     className="text-sm text-[#ff4f12] hover:underline"
                   >
                     Clear all filters
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filtered.map((company) => (
-                    <CompanyCard key={company.W2} company={company} />
-                  ))}
-                </div>
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {companies.map((company: Company) => (
+                      <CompanyCard key={company.W2} company={company} />
+                    ))}
+                  </div>
+                  
+                  {/* Pagination Controls */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-2 mt-8">
+                      <button
+                        onClick={() => setPage(Math.max(1, page - 1))}
+                        disabled={page === 1}
+                        className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Previous
+                      </button>
+                      
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                          const pageNum = i + 1;
+                          const isActive = pageNum === page;
+                          const isNearStart = pageNum < 3;
+                          const isNearEnd = pageNum > totalPages - 3;
+                          
+                          if (isNearStart || isNearEnd || isActive) {
+                            return (
+                              <button
+                                key={pageNum}
+                                onClick={() => setPage(pageNum)}
+                                className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                  isActive
+                                    ? 'bg-[#ff4f12] text-white'
+                                    : 'text-gray-700 bg-white border border-gray-200 hover:border-gray-300'
+                                }`}
+                              >
+                                {pageNum}
+                              </button>
+                            );
+                          }
+                          return null;
+                        })}
+                      </div>
+                      
+                      <button
+                        onClick={() => setPage(Math.min(totalPages, page + 1))}
+                        disabled={page === totalPages}
+                        className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
-            </>
             </div>
           )}
         </div>

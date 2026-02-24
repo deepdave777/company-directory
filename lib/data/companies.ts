@@ -1,29 +1,53 @@
 import { supabase } from '@/lib/supabase';
+import { logger } from '@/lib/logger';
 import { Company } from '@/lib/types';
 
 // Backend flag for future adapters (e.g., Mongo)
 const BACKEND = process.env.NEXT_PUBLIC_DATA_BACKEND || 'supabase';
 
 async function getCompanyBySlugSupabase(slug: string): Promise<Company | null> {
-  // Primary lookup by name-based slug (SEO-friendly URLs)
-  const name = decodeURIComponent(slug).replace(/-/g, ' ');
-  const { data, error } = await supabase
-    .from('companies')
-    .select('*')
-    .ilike('W2', name)
-    .limit(1)
-    .single();
+  try {
+    // Primary lookup by name-based slug (SEO-friendly URLs)
+    const name = decodeURIComponent(slug).replace(/-/g, ' ');
+    logger.debug('Looking up company', { name });
+    
+    const { data, error } = await supabase
+      .from('companies')
+      .select('*')
+      .ilike('W2', name)
+      .limit(1)
+      .single();
 
-  if (data) return data as Company;
+    if (error) {
+      logger.error('Company lookup failed', { name, error });
+      throw error;
+    }
+    
+    if (data) {
+      logger.debug('Company found', { name });
+      return data as Company;
+    }
 
-  // Fallback for partial matches or edge cases
-  const { data: fallback } = await supabase
-    .from('companies')
-    .select('*')
-    .ilike('W2', `%${name}%`)
-    .limit(1)
-    .single();
-  return fallback as Company | null;
+    // Fallback for partial matches or edge cases
+    logger.debug('Trying fallback search', { name });
+    const { data: fallback, error: fallbackError } = await supabase
+      .from('companies')
+      .select('*')
+      .ilike('W2', `%${name}%`)
+      .limit(1)
+      .single();
+      
+    if (fallbackError) {
+      logger.error('Fallback search failed', { name, error: fallbackError });
+      throw fallbackError;
+    }
+    
+    logger.debug('Fallback result', { name, found: !!fallback });
+    return fallback as Company | null;
+  } catch (error) {
+    logger.error('Database error in getCompanyBySlug', { slug, error });
+    return null;
+  }
 }
 
 async function listCompaniesSupabase(): Promise<Company[]> {
