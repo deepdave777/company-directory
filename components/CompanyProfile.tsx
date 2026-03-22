@@ -33,7 +33,7 @@ export default function CompanyProfile({ company }: Props) {
   const faqs = parseJsonField<import('@/lib/types').FAQ>(company.FAQs);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
       {/* Basic Info — full width */}
       <BasicInfoSection company={company} />
 
@@ -44,21 +44,26 @@ export default function CompanyProfile({ company }: Props) {
       <CompetitorsSection competitors={competitors} />
 
       {/* Leadership — full width */}
-      <LeadershipSection leadership={company.Leadership} />
+      <LeadershipSection 
+        leadership={company.Leadership}
+        ceoName={company['CEO Name']}
+        ceoLinkedin={company['CEO LinkedIn']}
+        ceoScore={company['CEO Score /100']}
+      />
 
       {/*
         Persistent 2-col layout: left col (lg:col-span-2) stays fixed width for ALL remaining
         sections. Right col (lg:col-span-1) holds Technologies, Key Focus Areas, Affiliated.
         items-start prevents the left col from stretching to match right col height.
       */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         {/* LEFT COLUMN — fixed 2/3 width throughout */}
         <div className="lg:col-span-2 flex flex-col gap-5">
           <LatestNewsSection news={latestNews} aiSummary={company['News AI Summary']} />
 
           <FundingSection
             numberOfRounds={company['Number of Funding Rounds']}
-            currentStage={company['Current Funding Stage']}
+            currentStage={company['Current Funding Round - Funding Section'] || company['Current Funding Stage']}
             totalFunding={company['Total Funding']}
             fundingRounds={fundingRounds}
           />

@@ -1,53 +1,54 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Minus, CaretDown, Question } from '@phosphor-icons/react';
+import { Plus, Minus, ChevronDown, HelpCircle } from 'lucide-react';
 import { FAQ } from '@/lib/types';
 
 interface Props {
   faqs: FAQ[];
 }
 
-function FAQItem({ faq, index }: { faq: FAQ; index: number }) {
-  const [open, setOpen] = useState(false);
-  const question = faq.question || (faq as Record<string, string>)['q'] || `Question ${index + 1}`;
-  const answer = faq.answer || (faq as Record<string, string>)['a'] || '';
-
-  return (
-    <div className="border border-gray-100 overflow-hidden">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 transition-colors"
-      >
-        <span className="text-sm font-medium text-gray-900 pr-4">{question}</span>
-        <CaretDown
-          className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
-        />
-      </button>
-      <div
-        className={`overflow-hidden transition-all duration-300 ease-in-out ${open ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
-      >
-        <div className="px-5 pb-4 text-sm text-gray-600 leading-relaxed border-t border-gray-100 pt-3">
-          {answer}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function FAQsSection({ faqs }: Props) {
+  const [openIdx, setOpenIdx] = useState<number | null>(null);
+
   if (!faqs || faqs.length === 0) return null;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6">
-      <div className="flex items-center gap-2 mb-5">
-        <Question className="w-5 h-5 text-[#ff4f12]" />
-        <h2 className="text-lg font-semibold text-gray-900">Frequently Asked Questions</h2>
+    <div>
+      <div className="flex items-center gap-2 mb-3">
+        <span className="w-1.5 h-1.5 bg-[#ff4f12]"></span>
+        <h2 className="text-sm font-semibold tracking-widest uppercase text-gray-900">FAQs</h2>
       </div>
-      <div className="space-y-2">
-        {faqs.map((faq, i) => (
-          <FAQItem key={i} faq={faq} index={i} />
-        ))}
+      <div className="bg-white border border-[#7d7373] p-5 sm:p-6">
+        <div className="divide-y divide-gray-50">
+          {faqs.map((faq, i) => {
+            const question = faq.question || (faq as Record<string, unknown>).q as string || '';
+            const answer = faq.answer || (faq as Record<string, unknown>).a as string || '';
+            if (!question) return null;
+            return (
+            <div key={i} className="py-3 first:pt-0 last:pb-0">
+              <button
+                onClick={() => setOpenIdx(openIdx === i ? null : i)}
+                className="flex items-start justify-between gap-3 w-full text-left group"
+              >
+                <span className="text-sm font-medium text-gray-900 group-hover:text-[#ff4f12] transition-colors leading-relaxed">
+                  {question}
+                </span>
+                {openIdx === i ? (
+                  <Minus strokeWidth={2} className="w-4 h-4 text-[#ff4f12] flex-shrink-0 mt-0.5" />
+                ) : (
+                  <Plus strokeWidth={2} className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                )}
+              </button>
+              {openIdx === i && answer && (
+                <p className="text-sm text-gray-600 leading-relaxed mt-2 pl-0">
+                  {answer}
+                </p>
+              )}
+            </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

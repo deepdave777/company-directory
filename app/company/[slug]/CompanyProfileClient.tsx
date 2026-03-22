@@ -4,8 +4,9 @@ import { Company } from '@/lib/types';
 import { getCompanyBySlug } from '@/lib/data/companies';
 import CompanyProfile from '@/components/CompanyProfile';
 import LayoutWrapper from '@/components/LayoutWrapper';
+import FloatingCTA from '@/components/FloatingCTA';
 import Link from 'next/link';
-import { ArrowLeft } from '@phosphor-icons/react';
+import { ArrowLeft } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 interface Props {
@@ -66,7 +67,7 @@ export default function CompanyProfileClient({ slug, initialCompany }: Props) {
 
   return (
     <LayoutWrapper>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-[#FAFAFA]">
         <div className="pt-14">
           <div className="max-w-7xl mx-auto px-16 py-6">
             <Link
@@ -75,7 +76,7 @@ export default function CompanyProfileClient({ slug, initialCompany }: Props) {
                 mounted ? 'slide-in-left' : 'opacity-0'
               }`}
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft strokeWidth={1.5}  className="w-4 h-4" />
               Back to Directory
             </Link>
 
@@ -95,6 +96,7 @@ export default function CompanyProfileClient({ slug, initialCompany }: Props) {
           </div>
         </div>
       </div>
+      <FloatingCTA />
     </LayoutWrapper>
   );
 }

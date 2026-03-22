@@ -1,6 +1,6 @@
 'use client';
 
-import { LinkSimple } from '@phosphor-icons/react';
+import { Link } from 'lucide-react';
 import { AffiliatedCompany } from '@/lib/types';
 import { ensureHttps } from '@/lib/utils';
 
@@ -9,7 +9,6 @@ interface Props {
 }
 
 function cleanAffiliatedName(raw: string): string {
-  // Strip header prefix like "Affiliated Organizations & Regional Branches: Remotasks"
   const colonIdx = raw.indexOf(':');
   if (colonIdx > 0 && colonIdx < 80) {
     const after = raw.slice(colonIdx + 1).trim();
@@ -22,34 +21,38 @@ export default function AffiliatedCompaniesSection({ companies }: Props) {
   if (!companies || companies.length === 0) return null;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6">
-      <div className="flex items-center gap-2 mb-4">
-        <LinkSimple className="w-5 h-5 text-[#ff4f12]" />
-        <h2 className="text-lg font-semibold text-gray-900">Affiliated Companies</h2>
+    <div>
+      <div className="flex items-center gap-2 mb-3">
+        <span className="w-1.5 h-1.5 bg-[#ff4f12]"></span>
+        <h2 className="text-sm font-semibold tracking-widest uppercase text-gray-900">Affiliated Companies</h2>
       </div>
-      <div className="space-y-2">
-        {companies.map((comp, i) => {
-          const rawName = typeof comp === 'string' ? comp : (comp.name || '');
-          const compName = cleanAffiliatedName(rawName);
-          if (!compName) return null;
-          const compUrl = typeof comp === 'string' ? null : (comp.url || comp.website || null);
-          return (
-            <div key={i}>
-              {compUrl ? (
-                <a
-                  href={ensureHttps(compUrl)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-[#ff4f12] hover:underline font-medium"
-                >
-                  {compName}
-                </a>
-              ) : (
-                <span className="text-sm text-[#ff4f12] font-medium">{compName}</span>
-              )}
-            </div>
-          );
-        })}
+      <div className="bg-white border border-[#7d7373] p-5 sm:p-6">
+        <div className="flex flex-wrap gap-2.5">
+          {companies.map((comp, i) => {
+            const rawName = typeof comp === 'string' ? comp : (comp.name || '');
+            const compName = cleanAffiliatedName(rawName);
+            if (!compName) return null;
+            const compUrl = typeof comp === 'string' ? null : (comp.url || comp.website || null);
+            return (
+              <div key={i}>
+                {compUrl ? (
+                  <a
+                    href={ensureHttps(compUrl)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block px-2.5 py-1 text-xs font-medium bg-gray-50 text-gray-700 border border-[#7d7373] hover:border-[#ff4f12] hover:text-[#ff4f12] transition-colors"
+                  >
+                    {compName}
+                  </a>
+                ) : (
+                  <span className="inline-block px-2.5 py-1 text-xs font-medium bg-gray-50 text-gray-700 border border-[#7d7373]">
+                    {compName}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

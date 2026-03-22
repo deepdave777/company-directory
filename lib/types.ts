@@ -41,6 +41,14 @@ export interface Company {
   'YouTube AI Summary': string | null;
   'Reddit AI Summary': string | null;
   'Last Updated': string | null;
+  'Total Visits'?: string | null;
+  'Global Rank'?: string | null;
+  'Web Data Month'?: string | null;
+  'CEO Name'?: string | null;
+  'CEO LinkedIn'?: string | null;
+  'CEO Score /100'?: number | null;
+  'Current Funding Round - Funding Section'?: string | null;
+  [key: string]: any;
 }
 
 export interface NewsItem {

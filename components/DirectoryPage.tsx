@@ -3,7 +3,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { CaretDown, MagnifyingGlass, ArrowsVertical, Faders } from '@phosphor-icons/react';
+import { useRouter } from 'next/navigation';
+import { ChevronDown, Search, ArrowUpDown, SlidersHorizontal } from 'lucide-react';
 import { listCompanies } from '@/lib/data/companies';
 import { Company } from '@/lib/types';
 import CompanyCard from './CompanyCard';
@@ -39,24 +40,24 @@ function FilterDropdown({ value, options, onChange }: FilterDropdownProps) {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(!open)}
-        className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+        className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${
           value.startsWith('All')
-            ? 'text-gray-700 bg-white border border-gray-200 hover:border-gray-300'
-            : 'text-[#ff4f12] bg-[#fff1ec] border border-[#ff4f12] hover:border-[#ff4f12]'
+            ? 'text-gray-600 bg-white border border-[#7d7373] hover:border-gray-400'
+            : 'text-[#ff4f12] bg-[#fff1ec] border border-[#ff4f12]/40 hover:border-[#ff4f12]'
         }`}
       >
         {value}
-        <CaretDown className={`w-3.5 h-3.5 transition-transform duration-150 ${open ? 'rotate-180' : ''} ${
+        <ChevronDown strokeWidth={1.5}  className={`w-3.5 h-3.5 transition-transform duration-150 ${open ? 'rotate-180' : ''} ${
           value.startsWith('All') ? 'text-gray-400' : 'text-[#ff4f12]'
         }`} />
       </button>
       {open && (
-        <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[160px] py-1 animate-fade-in">
+        <div className="absolute top-full left-0 mt-1 bg-white border border-[#7d7373] shadow-lg z-20 min-w-[160px] py-1 animate-fade-in">
           {options.map((opt) => (
             <button
               key={opt}
               onClick={() => { onChange(opt); setOpen(false); }}
-              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors ${value === opt ? 'text-[#ff4f12] font-medium bg-[#fff1ec]' : 'text-gray-700'}`}
+              className={`w-full text-left px-3 py-2 text-sm hover:bg-[#FAFAFA] transition-colors ${value === opt ? 'text-[#ff4f12] font-medium bg-[#fff1ec]' : 'text-gray-700'}`}
             >
               {opt}
             </button>
@@ -68,6 +69,7 @@ function FilterDropdown({ value, options, onChange }: FilterDropdownProps) {
 }
 
 export default function DirectoryPage() {
+  const router = useRouter();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -125,6 +127,28 @@ export default function DirectoryPage() {
   const [searchInput, setSearchInput] = useState(search);
   
   useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (!searchInput.trim()) {
+        setSearchSuggestions([]);
+        return;
+      }
+      try {
+        const params = new URLSearchParams({ search: searchInput, limit: '5' });
+        const res = await fetch(`/api/companies?${params}`);
+        if (res.ok) {
+          const json = await res.json();
+          setSearchSuggestions(json.data || []);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    const timer = setTimeout(fetchSuggestions, 150);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  useEffect(() => {
     const timer = setTimeout(() => {
       if (searchInput !== search) {
         setSearch(searchInput);
@@ -134,10 +158,6 @@ export default function DirectoryPage() {
     
     return () => clearTimeout(timer);
   }, [searchInput, search]);
-
-  useEffect(() => {
-    fetchCompanies();
-  }, [fetchCompanies]);
 
   // Handle click outside for search suggestions
   useEffect(() => {
@@ -158,45 +178,51 @@ export default function DirectoryPage() {
     <LayoutWrapper>
       <div className="min-h-screen bg-white">
         {/* Hero */}
-        <div className="pt-14">
-        <div className="relative px-16 hero-grid">
-          <div className="max-w-7xl mx-auto relative py-36">
-            <div className="flex flex-col gap-4 text-left max-w-4xl">
-              <h1 className="text-6xl sm:text-5xl lg:text-6xl font-normal text-gray-900 leading-none tracking-tight font-display">
+        <div className="pt-20 bg-[#FAFAFA] border-b border-[#7d7373/60]">
+        <div className="relative px-6 lg:px-16 hero-grid">
+          <div className="max-w-4xl mx-auto relative py-20 sm:py-28 flex flex-col items-center text-center">
+            <div className="flex flex-col gap-6 items-center">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-50/50 border border-orange-100 mb-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#ff4f12]"></span>
+                <span className="text-xs font-semibold tracking-wide text-[#ff4f12] uppercase">Directory</span>
+              </div>
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-normal text-gray-900 leading-[1.08] tracking-tight font-display">
                 Explore insights on people, companies &<span className="text-[#ff4f12]"> businesses</span>
               </h1>
-              <p className="text-gray-600 text-base sm:text-lg max-w-xl">
+              <p className="text-gray-500 text-base sm:text-lg max-w-xl">
                 Discover & learn the GTM skills you need to grow faster and build with confidence using Floqer.
               </p>
               {/* Search with suggestions */}
-              <div className="w-full max-w-xl relative mt-4" ref={searchRef}>
-                <MagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <div className="w-full max-w-2xl relative mt-8" ref={searchRef}>
+                <Search strokeWidth={1.5}  className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search companies..."
                   value={searchInput}
                   onChange={e => setSearchInput(e.target.value)}
                   onFocus={() => setShowSuggestions(searchSuggestions.length > 0)}
-                  className="w-full pl-11 pr-4 py-3.5 text-sm border border-gray-200 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-[#ff4f12]/20 focus:border-[#ff4f12] transition-all"
+                  className="w-full pl-11 pr-4 py-3.5 text-sm border border-[#7d7373] rounded-xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04),0_16px_32px_rgba(0,0,0,0.04)] focus:outline-none focus:ring-2 focus:ring-[#ff4f12]/20 focus:border-[#ff4f12] transition-all"
                 />
                 
                 {/* Search Suggestions Dropdown */}
                 {showSuggestions && searchSuggestions.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-30 max-h-64 overflow-y-auto">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#7d7373] rounded-lg shadow-lg z-30 max-h-64 overflow-y-auto">
                     {searchSuggestions.map((company) => {
                       const slug = createSafeSlug(company.W2);
                       return (
-                        <Link
+                        <a
                           key={company.W2}
                           href={`/company/${slug}`}
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.preventDefault();
                             setSearchInput(company.W2);
                             setSearch(company.W2);
                             setShowSuggestions(false);
+                            router.push(`/company/${slug}`);
                           }}
-                          className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-[#FAFAFA] transition-colors border-b border-[#7d7373] last:border-b-0"
                         >
-                          <div className="w-8 h-8 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center border border-gray-200">
+                          <div className="w-8 h-8 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center border border-[#7d7373]">
                             {company['Company Logo URL'] ? (
                               <Image
                                 src={company['Company Logo URL']}
@@ -220,7 +246,7 @@ export default function DirectoryPage() {
                               {company['Company Industry'] || 'Technology'}
                             </div>
                           </div>
-                        </Link>
+                        </a>
                       );
                     })}
                   </div>
@@ -243,11 +269,11 @@ export default function DirectoryPage() {
         </div>
 
         {/* Filters Bar */}
-        <div className="border-t border-gray-100 bg-white sticky top-14 z-10">
-          <div className="max-w-7xl mx-auto px-16 py-3 flex items-center justify-between flex-wrap gap-3">
+        <div className="border-t border-[#7d7373] bg-white sticky top-14 z-10">
+          <div className="max-w-7xl mx-auto px-6 lg:px-16 py-3 flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-1.5 text-sm text-gray-500 mr-1">
-                <Faders className="w-4 h-4" />
+                <SlidersHorizontal strokeWidth={1.5}  className="w-4 h-4" />
                 <span className="font-medium">Filters</span>
               </div>
               <FilterDropdown value={stage} options={STAGES} onChange={(value) => { setStage(value); setPage(1); }} />
@@ -257,16 +283,16 @@ export default function DirectoryPage() {
             </div>
             <button
               onClick={() => setSortAZ(s => s === 'asc' ? 'desc' : 'asc')}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-[#7d7373] hover:border-gray-400 transition-colors"
             >
-              <ArrowsVertical className="w-3.5 h-3.5 text-gray-400" />
+              <ArrowUpDown strokeWidth={1.5}  className="w-3.5 h-3.5 text-gray-400" />
               {sortAZ === 'asc' ? 'A → Z' : 'Z → A'}
             </button>
           </div>
         </div>
 
         {/* Results */}
-        <div className="max-w-7xl mx-auto px-16 py-6">
+        <div className="max-w-7xl mx-auto px-6 lg:px-16 py-8">
           {loading ? (
             <div className={`flex flex-col items-center justify-center py-24 gap-4 ${
               mounted ? 'fade-in' : 'opacity-0'
@@ -283,13 +309,13 @@ export default function DirectoryPage() {
             </div>
           ) : (
             <div className={mounted ? 'fade-in' : 'opacity-0'}>
-              <div className="flex items-center justify-between mb-5">
-                <p className="text-sm text-gray-500">
-                  {totalItems} {totalItems === 1 ? 'company' : 'companies'} found
+              <div className="flex items-center justify-between mb-6">
+                <p className="text-sm text-gray-400">
+                  Showing <span className="font-medium text-gray-700">{totalItems}</span> {totalItems === 1 ? 'company' : 'companies'}
                 </p>
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <span>Page {page} of {totalPages}</span>
-                </div>
+                <p className="text-sm text-gray-400">
+                  Page <span className="font-medium text-gray-700">{page}</span> of {totalPages}
+                </p>
               </div>
               {companies.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-24 gap-3">
@@ -310,7 +336,7 @@ export default function DirectoryPage() {
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                     {companies.map((company: Company) => (
                       <CompanyCard key={company.W2} company={company} />
                     ))}
@@ -320,9 +346,12 @@ export default function DirectoryPage() {
                   {totalPages > 1 && (
                     <div className="flex items-center justify-center gap-2 mt-8">
                       <button
-                        onClick={() => setPage(Math.max(1, page - 1))}
+                        onClick={() => {
+                          setPage(Math.max(1, page - 1));
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
                         disabled={page === 1}
-                        className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-[#7d7373] hover:border-gray-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Previous
                       </button>
@@ -338,11 +367,14 @@ export default function DirectoryPage() {
                             return (
                               <button
                                 key={pageNum}
-                                onClick={() => setPage(pageNum)}
-                                className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                onClick={() => {
+                                  setPage(pageNum);
+                                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}
+                                className={`px-3 py-2 text-sm font-medium transition-colors ${
                                   isActive
                                     ? 'bg-[#ff4f12] text-white'
-                                    : 'text-gray-700 bg-white border border-gray-200 hover:border-gray-300'
+                                    : 'text-gray-600 bg-white border border-[#7d7373] hover:border-gray-400'
                                 }`}
                               >
                                 {pageNum}
@@ -354,9 +386,12 @@ export default function DirectoryPage() {
                       </div>
                       
                       <button
-                        onClick={() => setPage(Math.min(totalPages, page + 1))}
+                        onClick={() => {
+                          setPage(Math.min(totalPages, page + 1));
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
                         disabled={page === totalPages}
-                        className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-[#7d7373] rounded-lg hover:border-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Next
                       </button>

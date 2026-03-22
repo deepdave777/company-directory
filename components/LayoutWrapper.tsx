@@ -2,6 +2,7 @@
 
 import { ReactNode } from 'react';
 import Navbar from './Navbar';
+import Footer from './Footer';
 import PageTransition from './PageTransition';
 
 interface LayoutWrapperProps {
@@ -10,9 +11,12 @@ interface LayoutWrapperProps {
 
 export default function LayoutWrapper({ children }: LayoutWrapperProps) {
   return (
-    <>
+    <div className="flex flex-col min-h-screen">
       <Navbar />
-      <PageTransition>{children}</PageTransition>
-    </>
+      <main className="flex-grow">
+        <PageTransition>{children}</PageTransition>
+      </main>
+      <Footer />
+    </div>
   );
 }

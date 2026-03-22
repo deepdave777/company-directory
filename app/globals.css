@@ -34,10 +34,10 @@ h1, h2, h3, .font-display {
   font-family: 'APK Galeria', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #f1f1f1; border: 1px solid #828282; }
-::-webkit-scrollbar-thumb { background: #d1d5db; border: 1px solid #828282; }
+/* Scrollbar — subtle, no harsh borders */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d1d5db; }
 ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
 
 /* Smooth scroll */
@@ -47,7 +47,7 @@ html { scroll-behavior: smooth; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* Remove ALL rounded edges globally */
+/* Remove ALL rounded edges globally — Floqer design language */
 *,
 *::before,
 *::after {
@@ -67,7 +67,6 @@ html { scroll-behavior: smooth; }
   white-space: nowrap;
 }
 
-/* Brand chip */
 .chip-brand {
   background: #fff1ec;
   color: #ff4f12;
@@ -90,63 +89,19 @@ html { scroll-behavior: smooth; }
   transition: max-height 0.3s ease, opacity 0.3s ease;
 }
 
-/* Override Tailwind gray-50 to #fafafa */
-.bg-gray-50 { background-color: #fafafa !important; }
-.hover\:bg-gray-50:hover { background-color: #fafafa !important; }
-
-/* Page transitions */
-.page-transition-enter {
-  opacity: 0;
-  transform: translateY(20px);
-}
-
-.page-transition-enter-active {
-  opacity: 1;
-  transform: translateY(0);
-  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
-}
-
-.page-transition-exit {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.page-transition-exit-active {
-  opacity: 0;
-  transform: translateY(-20px);
-  transition: opacity 0.2s ease-in, transform 0.2s ease-in;
-}
-
-/* Fade in animation for content */
+/* Fade in */
 .fade-in {
-  animation: fadeIn 0.6s ease-out;
+  animation: fadeIn 0.5s ease-out;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Slide in from left animation */
+/* Slide in from left */
 .slide-in-left {
   animation: slideInLeft 0.4s ease-out;
 }
 
 @keyframes slideInLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 /* Smooth link transitions */
@@ -154,41 +109,11 @@ a {
   transition: color 0.2s ease;
 }
 
-/* Page transition overlay */
-@keyframes pageSlideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes pageSlideDown {
-  from {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-}
-
-/* Hero grid background */
+/* Hero grid background — very subtle */
 .hero-grid {
   background-color: #ffffff;
   background-image:
-    linear-gradient(to right, #f3f4f6 1px, transparent 1px),
-    linear-gradient(to bottom, #f3f4f6 1px, transparent 1px);
-  background-size: 48px 48px;
+    linear-gradient(to right, #f0f0f0 1px, transparent 1px),
+    linear-gradient(to bottom, #f0f0f0 1px, transparent 1px);
+  background-size: 56px 56px;
 }
-
-/* Outline color overrides for sections/cards/search/filter */
-.border { border-color: #8a8a8a !important; }
-.border-gray-200 { border-color: #8a8a8a !important; }
-.border-gray-100 { border-color: #8a8a8a !important; }
-.hover\:border-gray-200:hover { border-color: #8a8a8a !important; }
-.hover\:border-gray-100:hover { border-color: #8a8a8a !important; }
