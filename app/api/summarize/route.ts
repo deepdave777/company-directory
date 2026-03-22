@@ -1,23 +1,50 @@
 import { NextResponse } from 'next/server';
+import { YoutubeTranscript } from 'youtube-transcript';
+
+// Helper to extract YouTube video ID from URL
+function extractVideoId(url: string) {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url?.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+}
 
 export async function POST(req: Request) {
   try {
-    const { type, titles } = await req.json();
+    const { type, titles, url } = await req.json();
 
     if (!titles || !Array.isArray(titles) || titles.length === 0) {
       return NextResponse.json({ error: 'No titles provided' }, { status: 400 });
     }
 
-    // Prepare prompt
     let input = '';
     let max_length = 60;
     
     if (type === 'news') {
       input = "Summarize the following news headlines into a short summary: " + titles.join('. ');
-      max_length = 100; // allow a bit more for news
+      max_length = 100;
     } else if (type === 'video') {
-      input = "Summarize what this video title is about in one sentence: " + titles[0];
-      max_length = 40; // 2 lines max
+      let transcriptText = null;
+      
+      if (url) {
+        const videoId = extractVideoId(url);
+        if (videoId) {
+          try {
+            const transcript = await YoutubeTranscript.fetchTranscript(videoId);
+            // Limit transcript words to avoid token limits for BART
+            transcriptText = transcript.map(t => t.text).join(' ').split(' ').slice(0, 800).join(' ');
+          } catch (err) {
+            console.warn("Transcript disabled or not found, falling back to title:", err);
+          }
+        }
+      }
+
+      if (transcriptText) {
+        input = `Summarize the following YouTube video transcript in a short 2-line sentence. Be extremely concise. Transcript: ${transcriptText}`;
+        max_length = 60; // Slightly longer for actual transcript summaries
+      } else {
+        input = "Summarize what this video title is about in one sentence: " + titles[0];
+        max_length = 40;
+      }
     } else {
       return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
     }
@@ -32,7 +59,6 @@ export async function POST(req: Request) {
       headers['Authorization'] = `Bearer ${hfToken}`;
     }
 
-    // Using a reliable summarization model
     const response = await fetch(
       "https://router.huggingface.co/hf-inference/models/facebook/bart-large-cnn",
       {
@@ -52,7 +78,6 @@ export async function POST(req: Request) {
     if (!response.ok) {
       const errText = await response.text();
       console.error('HF API Error:', errText);
-      // Fallback if model is loading or API limit hit
       if (response.status === 503) {
         return NextResponse.json({ summary: "AI model is currently warming up. Please try again in a few seconds." });
       }
@@ -62,7 +87,6 @@ export async function POST(req: Request) {
     const result = await response.json();
     let summaryText = result[0]?.summary_text || 'No summary generated.';
     
-    // Clean up if it just repeated the prompt
     if (summaryText.startsWith('Summarize the following')) {
       summaryText = summaryText.replace(/Summarize the following.*?:\s*/i, '');
     }

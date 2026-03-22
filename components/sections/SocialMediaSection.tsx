@@ -27,7 +27,7 @@ export default function SocialMediaSection({ youtube, reddit, youtubeSummary, re
   const [loadingSummaries, setLoadingSummaries] = useState<Record<number, boolean>>({});
   const [videoSummaries, setVideoSummaries] = useState<Record<number, string>>({});
 
-  const handleSummarizeVideo = async (e: React.MouseEvent, index: number, title: string) => {
+  const handleSummarizeVideo = async (e: React.MouseEvent, index: number, title: string, url: string) => {
     e.preventDefault(); // Prevent standard click behavior or link bubbling if any
     
     if (videoSummaries[index]) return; // Already summarized
@@ -39,7 +39,8 @@ export default function SocialMediaSection({ youtube, reddit, youtubeSummary, re
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'video',
-          titles: [title]
+          titles: [title],
+          url: url
         })
       });
       const data = await res.json();
@@ -139,7 +140,7 @@ export default function SocialMediaSection({ youtube, reddit, youtubeSummary, re
                         </p>
                       ) : (
                         <button
-                          onClick={(e) => handleSummarizeVideo(e, i, title)}
+                          onClick={(e) => handleSummarizeVideo(e, i, title, url)}
                           disabled={loadingSummaries[i]}
                           className="flex items-center justify-center gap-1.5 w-full bg-white border border-[#7d7373] py-1.5 px-2 hover:bg-[#fff8f6] hover:border-[#ffd5c2] hover:text-[#ff4f12] transition-colors disabled:opacity-50 group/btn"
                         >
